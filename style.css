@@ -101,3 +101,5 @@ h3 { font-size: 14px; margin: 20px 0 8px; color: var(--muted); letter-spacing: .
 .tabs button { flex: 1; min-height: 60px; font-size: 16px; color: var(--muted); font-weight: 700; }
 .tabs button.on { color: var(--accent); }
 .rtitle { margin: 4px 0 10px; font-size: 18px; }
+.play.human { background: var(--card2); color: var(--text); font-size: 19px; font-weight: 700; margin-right: 4px; }
+.ttsbar button[data-act="voices"] { font-size: 17px; font-weight: 700; }

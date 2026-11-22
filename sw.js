@@ -1,6 +1,6 @@
 // Offline: app files cached up front (bump VERSION when they change); feeds.json network-first; texts and the
 // dictionary cached the first time they are opened.
-const VERSION = "yomu-2";
+const VERSION = "yomu-3";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "library.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

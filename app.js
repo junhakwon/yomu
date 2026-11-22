@@ -8,7 +8,7 @@ const BOX_DAYS = [1, 3, 7, 14, 30, 60];          // review spacing for "覚え�
 
 // ---------- state ----------
 function defaults() {
-  return { settings: { theme: "dark", newsCh: NEWS_CH[0], furigana: false, vertical: false, fs: 19, rate: 1 },
+  return { settings: { theme: "dark", newsCh: NEWS_CH[0], furigana: false, vertical: false, fs: 19, rate: 1, voice: "" },
     progress: {}, words: {}, readDays: {}, lastText: null };
 }
 let S = (() => { try { const r = localStorage.getItem(KEY); if (r) return deepMerge(defaults(), JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -28,6 +28,11 @@ function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; 
 async function getJSON(url) { const r = await fetch(url, { cache: "no-cache" }); if (!r.ok) throw new Error(r.status); return r.json(); }
 
 // Open a video in the YouTube app (Premium keeps it playing with the screen off); the website if the app is missing.
+function openYTSearch(q) {
+  const s = encodeURIComponent(q + " 朗読");
+  location.href = "youtube://www.youtube.com/results?search_query=" + s;
+  setTimeout(() => { if (!document.hidden) location.href = "https://www.youtube.com/results?search_query=" + s; }, 1200);
+}
 function openYT(id) {
   location.href = "youtube://www.youtube.com/watch?v=" + id;
   setTimeout(() => { if (!document.hidden) location.href = "https://www.youtube.com/watch?v=" + id; }, 1200);
@@ -123,7 +128,9 @@ function listenView() {
     <h3>朗読 — 名作を耳で</h3>
     <p class="muted small" style="margin-top:-2px">iPhoneの日本語音声が一文ずつ読み上げます。続きから再開。Yomuを開いたまま、画面はつけておいてください（自動で消灯しません）。</p>
     <div class="card">${LIB.map(t => `<div class="vid"><div class="t"><b>${esc(t.title)}</b><small>${esc(t.author)} · 約${Math.max(1, Math.round(t.chars / 330))}分 · ${pct(t)}%</small></div>
-      <button class="play" data-roudoku="${t.id}" aria-label="朗読">🔊</button></div>`).join("")}</div>`;
+      <button class="play human" data-human="${esc(t.title + " " + t.author)}" aria-label="人の朗読をYouTubeで">人</button>
+      <button class="play" data-roudoku="${t.id}" aria-label="iPhoneの声で朗読">🔊</button></div>`).join("")}</div>
+    <p class="muted small">🔊 iPhoneの声で本文を表示しながら朗読　·　人 ナレーターによる朗読をYouTubeアプリで検索（Premiumなら画面を消して運転中も）</p>`;
 }
 
 function wordsView() {
@@ -158,7 +165,7 @@ function readerView() {
     <p class="muted small" style="margin-top:24px">底本・入力・校正: 青空文庫</p>
     ${TTS.on ? `<div class="ttsbar"><button data-act="tts-prev" aria-label="前の文">⏮</button>
       <button class="main" data-act="tts-play">${TTS.playing ? "⏸" : "▶"}</button>
-      <button data-act="tts-next" aria-label="次の文">⏭</button><button data-act="tts-rate">${st.rate.toFixed(1)}×</button>
+      <button data-act="tts-next" aria-label="次の文">⏭</button><button data-act="tts-rate">${st.rate.toFixed(1)}×</button><button data-act="voices" aria-label="声">声</button>
       <button data-act="tts" aria-label="朗読を閉じる">✕</button></div><div style="height:90px"></div>` : ""}`;
 }
 // furigana over the kanji only: kana the word starts or ends with (待っ→まっ, 広い→ひろい) stays outside the ruby
@@ -229,10 +236,34 @@ function sentencesOf(pi) {                             // [first, last] token in
   if (a < p.length && p.slice(a).map(tokStr).join("").trim()) out.push([a, p.length - 1]);
   return out;
 }
+// natural voices first: Premium, then Enhanced, then the standard ones; novelty voices last
+const voiceRank = v => /premium|プレミアム|natural/i.test(v.name) ? 0 : /enhanced|拡張|高品質/i.test(v.name) ? 1 : /kyoko|otoya|o-ren|hattori|google|nanami|keita/i.test(v.name) ? 2 : 3;
+function jaVoices() { return speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang)).sort((x, y) => voiceRank(x) - voiceRank(y)); }
 function jaVoice() {
-  const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
-  return vs.find(v => /enhanced|premium|拡張|O-ren|Kyoko/i.test(v.name)) || vs[0] || null;
+  const vs = jaVoices();
+  return vs.find(v => v.voiceURI === S.settings.voice) || vs[0] || null;
 }
+function voiceSheet() {
+  const vs = jaVoices(), cur = jaVoice();
+  const tag = v => ["プレミアム", "高品質", "", ""][voiceRank(v)];
+  $("#sheet-body").innerHTML = `<h1 style="margin-top:0">読み上げの声</h1>
+    ${vs.map(v => `<div class="row"><button class="t" data-voice="${esc(v.voiceURI)}" style="text-align:left">
+      <b>${v === cur ? "✓ " : ""}${esc(v.name)}</b><span class="muted small">${tag(v)}</span></button>
+      <button class="seg" data-try="${esc(v.voiceURI)}" style="min-width:52px;min-height:44px;border-radius:12px;background:var(--card2)">▶</button></div>`).join("")
+      || '<p class="muted">日本語の声が見つかりません。</p>'}
+    <div class="card" style="background:var(--card2);margin-top:14px"><b>もっと人間らしい声にするには</b>
+      <p class="small" style="margin:6px 0 0">iPhoneの<b>設定 › アクセシビリティ › 読み上げコンテンツ › 声 › 日本語</b>で
+      「Kyoko（拡張）」「Otoya（拡張）」など<b>拡張・プレミアム</b>の声をダウンロードしてください（無料）。そのあとYomuを開き直すと、ここに出てきます。</p></div>
+    <button class="big" data-act="close">閉じる</button>`;
+  $("#sheet").hidden = false;
+}
+function tryVoice(uri) {
+  const v = jaVoices().find(x => x.voiceURI === uri); if (!v) return;
+  TTS.gen++; speechSynthesis.cancel(); if (TTS.playing) { TTS.playing = false; render(); }
+  const u = new SpeechSynthesisUtterance("ある日の暮方の事である。一人の下人が、羅生門の下で雨やみを待っていた。");
+  u.lang = "ja-JP"; u.voice = v; u.rate = S.settings.rate; speechSynthesis.speak(u);
+}
+if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => { if (!$("#sheet").hidden && $("#sheet-body h1") && $("#sheet-body h1").textContent === "読み上げの声") voiceSheet(); };
 function highlight(scroll, instant) {
   document.querySelectorAll(".text .say").forEach(e => e.classList.remove("say"));
   if (!TEXT || !TTS.on) return;
@@ -319,6 +350,10 @@ document.addEventListener("click", e => {
   if (d.act === "tts-play") { if (TTS.playing) ttsPause(); else { TTS.playing = true; wake(true); render(); speakNow(); } return; }
   if (d.act === "tts-prev") { ttsStep(-1); return; }
   if (d.act === "tts-next") { ttsStep(1); return; }
+  if (d.act === "voices") { voiceSheet(); return; }
+  if (d.voice) { S.settings.voice = d.voice; save(); tryVoice(d.voice); voiceSheet(); return; }
+  if (d.try) { tryVoice(d.try); return; }
+  if (d.human) { openYTSearch(d.human); return; }
   if (d.act === "tts-rate") { S.settings.rate = RATES[(RATES.indexOf(S.settings.rate) + 1) % RATES.length]; save(); render(); if (TTS.playing) speakNow(); return; }
   if (d.themeSet) { S.settings.theme = d.themeSet; save(); render(); return; }
   if (d.save) { const [pi, ti] = d.save.split(":").map(Number); toggleSave(pi, ti); return; }
