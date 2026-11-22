@@ -4,76 +4,87 @@
   "title": "羅生門",
   "author": "芥川竜之介",
   "chars": 5710,
-  "source": "https://www.aozora.gr.jp/cards/000879/card127.html"
+  "source": "https://www.aozora.gr.jp/cards/000879/card127.html",
+  "first": "ある日の暮方の事である。"
  },
  {
   "id": "42",
   "title": "鼻",
   "author": "芥川竜之介",
   "chars": 5778,
-  "source": "https://www.aozora.gr.jp/cards/000879/card42.html"
+  "source": "https://www.aozora.gr.jp/cards/000879/card42.html",
+  "first": "禅智内供の鼻と云えば、池の尾で知らない者はない。"
  },
  {
   "id": "92",
   "title": "蜘蛛の糸",
   "author": "芥川竜之介",
   "chars": 2865,
-  "source": "https://www.aozora.gr.jp/cards/000879/card92.html"
+  "source": "https://www.aozora.gr.jp/cards/000879/card92.html",
+  "first": "ある日の事でございます。"
  },
  {
   "id": "179",
   "title": "藪の中",
   "author": "芥川竜之介",
   "chars": 8487,
-  "source": "https://www.aozora.gr.jp/cards/000879/card179.html"
+  "source": "https://www.aozora.gr.jp/cards/000879/card179.html",
+  "first": "さようでございます。"
  },
  {
   "id": "799",
   "title": "夢十夜",
   "author": "夏目漱石",
   "chars": 15992,
-  "source": "https://www.aozora.gr.jp/cards/000148/card799.html"
+  "source": "https://www.aozora.gr.jp/cards/000148/card799.html",
+  "first": "こんな夢を見た。"
  },
  {
   "id": "1567",
   "title": "走れメロス",
   "author": "太宰治",
   "chars": 9840,
-  "source": "https://www.aozora.gr.jp/cards/000035/card1567.html"
+  "source": "https://www.aozora.gr.jp/cards/000035/card1567.html",
+  "first": "メロスは激怒した。"
  },
  {
   "id": "43754",
   "title": "注文の多い料理店",
   "author": "宮沢賢治",
   "chars": 5466,
-  "source": "https://www.aozora.gr.jp/cards/000081/card43754.html"
+  "source": "https://www.aozora.gr.jp/cards/000081/card43754.html",
+  "first": "二人の若い紳士が、すっかりイギリスの兵隊のかたちをして、ぴかぴかする鉄砲をかついで、白熊のような犬を二疋つれて、だいぶ山奥の、…"
  },
  {
   "id": "624",
   "title": "山月記",
   "author": "中島敦",
   "chars": 5798,
-  "source": "https://www.aozora.gr.jp/cards/000119/card624.html"
+  "source": "https://www.aozora.gr.jp/cards/000119/card624.html",
+  "first": "隴西の李徴は博学才穎、天宝の末年、若くして名を虎榜に連ね、ついで江南尉に補せられたが、性、狷介、自ら恃むところ頗る厚く、…"
  },
  {
   "id": "424",
   "title": "檸檬",
   "author": "梶井基次郎",
   "chars": 4958,
-  "source": "https://www.aozora.gr.jp/cards/000074/card424.html"
+  "source": "https://www.aozora.gr.jp/cards/000074/card424.html",
+  "first": "えたいの知れない不吉な塊が私の心を始終圧えつけていた。"
  },
  {
   "id": "456",
   "title": "銀河鉄道の夜",
   "author": "宮沢賢治",
   "chars": 38437,
-  "source": "https://www.aozora.gr.jp/cards/000081/card456.html"
+  "source": "https://www.aozora.gr.jp/cards/000081/card456.html",
+  "first": "「ではみなさんは、そういうふうに川だと云われたり、乳の流れたあとだと云われたりしていたこのぼんやりと白いものがほんとうは何かご承知ですか。」"
  },
  {
   "id": "752",
   "title": "坊っちゃん",
   "author": "夏目漱石",
   "chars": 88491,
-  "source": "https://www.aozora.gr.jp/cards/000148/card752.html"
+  "source": "https://www.aozora.gr.jp/cards/000148/card752.html",
+  "first": "親譲りの無鉄砲で小供の時から損ばかりしている。"
  }
 ]

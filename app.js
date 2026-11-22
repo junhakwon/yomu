@@ -8,7 +8,7 @@ const BOX_DAYS = [1, 3, 7, 14, 30, 60];          // review spacing for "覚え�
 
 // ---------- state ----------
 function defaults() {
-  return { settings: { theme: "dark", newsCh: NEWS_CH[0], furigana: false, vertical: false, fs: 19 },
+  return { settings: { theme: "dark", newsCh: NEWS_CH[0], furigana: false, vertical: false, fs: 19, rate: 1 },
     progress: {}, words: {}, readDays: {}, lastText: null };
 }
 let S = (() => { try { const r = localStorage.getItem(KEY); if (r) return deepMerge(defaults(), JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -80,6 +80,7 @@ function homeView() {
         ${vids.length > 1 ? `<div style="margin-top:8px">${vids.slice(0, 6).map((x, i) => i === newsIdx ? "" : `<button class="row" data-newsidx="${i}"><span class="t">${esc(x.title)}<br><span class="muted small">${ago(x.published)}</span></span></button>`).join("")}</div>` : ""}`
         : `<p class="muted">動画を読み込めませんでした。</p>`}
     </div>
+    ${openingCard()}
     ${last ? `<h3>続きを読む</h3><button class="card row" data-open="${last.id}" style="border:0"><span class="t"><b>${esc(last.title)}</b><span class="muted small">${esc(last.author)} · ${pct(last)}%</span></span><span>›</span></button>` : ""}
     <h3>NHKニュース 見出し</h3>
     <div class="card">${(FEEDS.news || []).slice(0, 6).map(newsRow).join("") || '<p class="muted">見出しを読み込めませんでした。</p>'}
@@ -88,6 +89,14 @@ function homeView() {
       <button data-theme-set="dark" class="${S.settings.theme === "dark" ? "on" : ""}">ダーク</button>
       <button data-theme-set="light" class="${S.settings.theme === "light" ? "on" : ""}">ライト</button></div>
       <p class="muted small" style="margin:10px 0 0">更新: ${FEEDS.updated ? ago(FEEDS.updated) : "—"}</p></div>`;
+}
+// one famous opening line a day, in library order
+function openingCard() {
+  if (!LIB.length) return "";
+  const t = LIB[Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5) % LIB.length];
+  return `<h3>今日の書き出し</h3><div class="card opening"><p class="line">${esc(t.first || "")}</p>
+    <p class="muted small">— ${esc(t.author)}『${esc(t.title)}』</p>
+    <div class="two"><button class="big" data-open="${t.id}">読む</button><button class="big primary" data-roudoku="${t.id}">🔊 朗読で聴く</button></div></div>`;
 }
 const newsRow = n => `<a class="row" href="${esc(n.link)}" target="_blank" rel="noopener"><span class="t">${esc(n.title)}<br><span class="muted small">${ago(n.time)}</span></span><span class="muted">↗</span></a>`;
 const pct = t => { const p = S.progress[t.id]; return p ? Math.min(100, Math.round(100 * p.p / Math.max(1, p.n - 1))) : 0; };
@@ -110,7 +119,11 @@ function listenView() {
     <div class="chips">${chans.map(c => `<button data-comedych="${esc(c)}" class="${c === comedyCh ? "on" : ""}">${esc(c.replace(/ ?(チャンネル|Official).*$/, "").replace(/、.*$/, ""))}</button>`).join("")}</div>
     <div class="card">${list.map(v => `<div class="vid"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/mqdefault.jpg" alt="">
       <div class="t">${esc(v.title)}<small>${esc(v.channel)} · ${mins(v.secs)} · ${ago(v.published)}</small></div>
-      <button class="play" data-yt="${v.id}" aria-label="YouTubeで再生">▶</button></div>`).join("") || '<p class="muted">動画がありません。</p>'}</div>`;
+      <button class="play" data-yt="${v.id}" aria-label="YouTubeで再生">▶</button></div>`).join("") || '<p class="muted">動画がありません。</p>'}</div>
+    <h3>朗読 — 名作を耳で</h3>
+    <p class="muted small" style="margin-top:-2px">iPhoneの日本語音声が一文ずつ読み上げます。続きから再開。Yomuを開いたまま、画面はつけておいてください（自動で消灯しません）。</p>
+    <div class="card">${LIB.map(t => `<div class="vid"><div class="t"><b>${esc(t.title)}</b><small>${esc(t.author)} · 約${Math.max(1, Math.round(t.chars / 330))}分 · ${pct(t)}%</small></div>
+      <button class="play" data-roudoku="${t.id}" aria-label="朗読">🔊</button></div>`).join("")}</div>`;
 }
 
 function wordsView() {
@@ -137,12 +150,16 @@ function readerView() {
     const inner = st.furigana && r ? rubyHTML(s, r) : esc(s);
     return `<span class="${cls}" data-t="${pi}:${ti}">${inner}</span>`;
   }).join("")}</p>`).join("");
-  return `<div class="reader-bar"><button data-act="back">‹</button><span class="ttl">${esc(TEXT.title)}</span>
-      <button data-act="furi" class="${st.furigana ? "on" : ""}">ふりがな</button><button data-act="vert" class="${st.vertical ? "on" : ""}">縦</button>
+  return `<div class="reader-bar"><button data-act="back">‹</button><span class="ttl"></span>
+      <button data-act="furi" class="${st.furigana ? "on" : ""}">ふりがな</button><button data-act="vert" class="${st.vertical ? "on" : ""}">縦</button><button data-act="tts" class="${TTS.on ? "on" : ""}" aria-label="朗読">🔊</button>
       <button data-act="fs:-1">小</button><button data-act="fs:1">大</button></div>
-    <p class="muted small">${esc(TEXT.author)}　·　単語をタップ</p>
+    <p class="rtitle"><b>${esc(TEXT.title)}</b> <span class="muted small">${esc(TEXT.author)}　·　単語をタップ</span></p>
     <div class="text ${st.vertical ? "vertical" : ""}" style="--fs:${st.fs}px">${paras}</div>
-    <p class="muted small" style="margin-top:24px">底本・入力・校正: 青空文庫</p>`;
+    <p class="muted small" style="margin-top:24px">底本・入力・校正: 青空文庫</p>
+    ${TTS.on ? `<div class="ttsbar"><button data-act="tts-prev" aria-label="前の文">⏮</button>
+      <button class="main" data-act="tts-play">${TTS.playing ? "⏸" : "▶"}</button>
+      <button data-act="tts-next" aria-label="次の文">⏭</button><button data-act="tts-rate">${st.rate.toFixed(1)}×</button>
+      <button data-act="tts" aria-label="朗読を閉じる">✕</button></div><div style="height:90px"></div>` : ""}`;
 }
 // furigana over the kanji only: kana the word starts or ends with (待っ→まっ, 広い→ひろい) stays outside the ruby
 function rubyHTML(s, r) {
@@ -157,7 +174,7 @@ let obs = null;
 function afterReader() {
   if (!TEXT) return;
   const p = S.progress[TEXT.id];
-  if (p && p.p > 0) { const el = document.querySelector(`[data-p="${p.p}"]`); if (el) el.scrollIntoView({ block: "start", inline: "start" }); }
+  if (p && p.p > 0 && !TTS.on) { const el = document.querySelector(`[data-p="${p.p}"]`); if (el) el.scrollIntoView({ block: "start", inline: "start" }); }
   if (obs) obs.disconnect();
   // the paragraph at the reading edge is the place to come back to: the top of the screen, or the right edge in 縦書き
   const vertical = S.settings.vertical, box = document.querySelector(".text");
@@ -166,11 +183,13 @@ function afterReader() {
       S.progress[TEXT.id] = { p: i, n: TEXT.paras.length }; save(); break; }
   }, vertical ? { root: box, rootMargin: "0px 0px 0px -85%" } : { rootMargin: "0px 0px -70% 0px" });
   document.querySelectorAll(".text p").forEach(el => obs.observe(el));
+  if (TTS.on) highlight(true, true);
 }
-async function openText(id) {
-  view = "reader"; TEXT = null; render();
+async function openText(id, roudoku) {
+  ttsStop(); view = "reader"; TEXT = null; render();
   try { [TEXT] = await Promise.all([getJSON(`text-${id}.json`), loadDict()]); } catch (e) { toast("読み込めませんでした"); view = "read"; render(); return; }
   S.lastText = id; save(); render(); if (!(S.progress[id] && S.progress[id].p > 0)) window.scrollTo(0, 0);
+  if (roudoku) ttsStart((S.progress[id] || {}).p || 0, 0);
 }
 function sentenceAround(pi, ti) {                      // the sentence the tapped word is in
   const p = TEXT.paras[pi], str = t => typeof t === "string" ? t : t[0];
@@ -186,6 +205,7 @@ function showWord(pi, ti) {
     ${e ? `<div class="muted" style="margin-top:6px">辞書形: <b>${esc(e[0])}</b>${e[1] ? `（${esc(e[1])}）` : ""}</div>
       <ol class="senses">${e.slice(2).map(g => `<li>${esc(g)}</li>`).join("")}</ol>` : `<p class="muted">辞書に見つかりませんでした。</p>`}
     ${e ? `<button class="big ${saved ? "" : "primary"}" data-save="${pi}:${ti}">${saved ? "保存済み — 外す" : "保存して復習"}</button>` : ""}
+    <button class="big" data-from="${pi}:${ti}">🔊 ここから朗読</button>
     <button class="big" data-act="close">閉じる</button>`;
   $("#sheet").hidden = false;
 }
@@ -197,6 +217,66 @@ function toggleSave(pi, ti) {
   document.querySelectorAll(".text .w").forEach(el => { const [a, b] = el.dataset.t.split(":"); const t = TEXT.paras[a][b]; if (t[2] === d) el.classList.toggle("saved", !!S.words[key]); });
   toast(S.words[key] ? "保存しました" : "外しました");
 }
+
+// ---------- 朗読: the iPhone's Japanese voice reads one sentence at a time, highlighted and scrolled into view ----------
+const TTS = { on: false, playing: false, p: 0, s: 0, gen: 0, lock: null };
+const RATES = [0.8, 1, 1.2, 1.5];
+const tokStr = t => typeof t === "string" ? t : t[0];
+function sentencesOf(pi) {                             // [first, last] token index of each sentence in a paragraph
+  const p = TEXT.paras[pi], out = []; let a = 0;
+  for (let i = 0; i < p.length; i++)
+    if (/[。！？]/.test(tokStr(p[i])) && !(i + 1 < p.length && /^[」』）]/.test(tokStr(p[i + 1])))) { out.push([a, i]); a = i + 1; }
+  if (a < p.length && p.slice(a).map(tokStr).join("").trim()) out.push([a, p.length - 1]);
+  return out;
+}
+function jaVoice() {
+  const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
+  return vs.find(v => /enhanced|premium|拡張|O-ren|Kyoko/i.test(v.name)) || vs[0] || null;
+}
+function highlight(scroll, instant) {
+  document.querySelectorAll(".text .say").forEach(e => e.classList.remove("say"));
+  if (!TEXT || !TTS.on) return;
+  const r = sentencesOf(TTS.p)[TTS.s]; if (!r) return;
+  let first = null;
+  for (let i = r[0]; i <= r[1]; i++) { const el = document.querySelector(`[data-t="${TTS.p}:${i}"]`); if (el) { el.classList.add("say"); first = first || el; } }
+  if (scroll && first) first.scrollIntoView({ behavior: instant ? "auto" : "smooth", block: "center", inline: "center" });
+}
+function speakNow() {
+  const gen = ++TTS.gen; speechSynthesis.cancel();
+  while (TTS.p < TEXT.paras.length && TTS.s >= sentencesOf(TTS.p).length) { TTS.p++; TTS.s = 0; }
+  if (TTS.p >= TEXT.paras.length) { TTS.playing = false; TTS.p = 0; TTS.s = 0; wake(false); render(); toast("おしまい"); return; }
+  const r = sentencesOf(TTS.p)[TTS.s];
+  const u = new SpeechSynthesisUtterance(TEXT.paras[TTS.p].slice(r[0], r[1] + 1).map(tokStr).join("").trim());
+  u.lang = "ja-JP"; u.rate = S.settings.rate; const v = jaVoice(); if (v) u.voice = v;
+  u.onend = () => { if (gen !== TTS.gen || !TTS.playing) return; TTS.s++; speakNow(); };
+  u.onerror = () => { if (gen === TTS.gen) { TTS.playing = false; render(); } };
+  S.progress[TEXT.id] = { p: TTS.p, n: TEXT.paras.length }; save();
+  highlight(true); speechSynthesis.speak(u);
+}
+async function wake(on) {                              // keep the screen on while reading aloud
+  try { if (on && !TTS.lock && navigator.wakeLock) TTS.lock = await navigator.wakeLock.request("screen");
+    if (!on && TTS.lock) { TTS.lock.release(); TTS.lock = null; } } catch (e) { TTS.lock = null; }
+}
+function ttsStart(p, s) {
+  if (!("speechSynthesis" in window)) { toast("この端末は読み上げに対応していません"); return; }
+  TTS.on = true; TTS.playing = true; TTS.p = p; TTS.s = s; wake(true);
+  render(); speakNow();
+  setTimeout(() => { if (TTS.on && !jaVoice()) toast("日本語の声がありません: 設定 › アクセシビリティ › 読み上げコンテンツ › 声"); }, 1500);
+}
+function ttsPause() { TTS.gen++; speechSynthesis.cancel(); TTS.playing = false; wake(false); render(); }
+function ttsStop() { if (!TTS.on) return; TTS.gen++; try { speechSynthesis.cancel(); } catch (e) {} TTS.on = TTS.playing = false; wake(false); highlight(false); }
+function ttsStep(d) {
+  TTS.s += d;
+  while (TTS.s < 0 && TTS.p > 0) { TTS.p--; TTS.s += sentencesOf(TTS.p).length; }
+  if (TTS.s < 0) TTS.s = 0;
+  if (TTS.playing) { speakNow(); return; }
+  while (TTS.p < TEXT.paras.length - 1 && TTS.s >= sentencesOf(TTS.p).length) { TTS.p++; TTS.s = 0; }
+  highlight(true);
+}
+// iOS only lets speech start inside a tap: say nothing right away so the sentences that follow are allowed
+function unlockSpeech() { try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && TTS.playing) { TTS.lock = null; wake(true); } });
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
 // ---------- review ----------
 let queue = [], shown = false;
@@ -226,18 +306,26 @@ document.addEventListener("click", e => {
   if (w && TEXT) { const [pi, ti] = w.dataset.t.split(":").map(Number); if (TEXT.paras[pi][ti][2] >= 0 || TEXT.paras[pi][ti][1]) showWord(pi, ti); return; }
   const b = e.target.closest("button, a"); if (!b) return;
   const d = b.dataset;
-  if (d.tab) { view = d.tab; render(); window.scrollTo(0, 0); return; }
+  if (d.tab) { ttsStop(); view = d.tab; render(); window.scrollTo(0, 0); return; }
   if (d.yt) { openYT(d.yt); return; }
   if (d.newsch) { S.settings.newsCh = d.newsch; newsIdx = 0; save(); render(); return; }
   if (d.newsidx) { newsIdx = +d.newsidx; render(); window.scrollTo(0, 0); return; }
   if (d.comedych) { comedyCh = d.comedych; render(); return; }
   if (d.open) { openText(d.open); return; }
+  if (d.roudoku) { unlockSpeech(); openText(d.roudoku, true); return; }
+  if (d.from) { const [pi, ti] = d.from.split(":").map(Number); $("#sheet").hidden = true;
+    ttsStart(pi, Math.max(0, sentencesOf(pi).findIndex(r => ti >= r[0] && ti <= r[1]))); return; }
+  if (d.act === "tts") { if (TTS.on) { ttsStop(); render(); } else ttsStart((S.progress[TEXT.id] || {}).p || 0, 0); return; }
+  if (d.act === "tts-play") { if (TTS.playing) ttsPause(); else { TTS.playing = true; wake(true); render(); speakNow(); } return; }
+  if (d.act === "tts-prev") { ttsStep(-1); return; }
+  if (d.act === "tts-next") { ttsStep(1); return; }
+  if (d.act === "tts-rate") { S.settings.rate = RATES[(RATES.indexOf(S.settings.rate) + 1) % RATES.length]; save(); render(); if (TTS.playing) speakNow(); return; }
   if (d.themeSet) { S.settings.theme = d.themeSet; save(); render(); return; }
   if (d.save) { const [pi, ti] = d.save.split(":").map(Number); toggleSave(pi, ti); return; }
   if (d.del) { delete S.words[d.del]; save(); render(); return; }
   if (d.grade) { grade(d.grade === "1"); return; }
   if (d.act === "close") { $("#sheet").hidden = true; return; }
-  if (d.act === "back") { view = "read"; TEXT = null; render(); window.scrollTo(0, 0); return; }
+  if (d.act === "back") { ttsStop(); view = "read"; TEXT = null; render(); window.scrollTo(0, 0); return; }
   if (d.act === "furi") { S.settings.furigana = !S.settings.furigana; save(); render(); return; }
   if (d.act === "vert") { S.settings.vertical = !S.settings.vertical; save(); render(); return; }
   if (d.act && d.act.startsWith("fs:")) { S.settings.fs = Math.max(15, Math.min(28, S.settings.fs + 2 * +d.act.slice(3))); save();
