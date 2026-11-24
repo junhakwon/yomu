@@ -15,14 +15,14 @@
 </head>
 <body>
 <main id="view"></main>
-<nav class="tabs">
+<nav class="tabs" aria-label="メニュー">
   <button data-tab="home" class="on">ホーム</button>
   <button data-tab="read">読む</button>
   <button data-tab="listen">聴く</button>
   <button data-tab="words">単語</button>
 </nav>
-<div id="sheet" class="sheet" hidden><div class="sheet-card" id="sheet-body"></div></div>
-<div id="toast" class="toast" hidden></div>
+<div id="sheet" class="sheet" hidden><div class="sheet-card" id="sheet-body" role="dialog" aria-modal="true"></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="app.js"></script>
 </body>
 </html>

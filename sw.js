@@ -1,7 +1,7 @@
 // Offline support. Online, app files and feeds come from the network (so updates show up right away) and a copy is
 // kept for offline use. The stories and dictionary never change, so they are kept after the first open and not
 // downloaded again. Bump VERSION when any app file changes so phones pick it up.
-const VERSION = "yomu-4";
+const VERSION = "yomu-5";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "library.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 const KEEP = "yomu-data";                                   // stories + dictionary, kept across versions
 self.addEventListener("install", e => {

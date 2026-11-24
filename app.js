@@ -372,6 +372,17 @@ $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") $("#sh
 
 Promise.all([loadFeeds, loadLib]).then(() => { if (Object.keys(S.words).length) loadDict().then(() => view === "words" && render()); render(); });
 render();
+// accessibility: tell screen readers which tab is current and which toggles are on; Escape closes an open sheet
+let a11yQueued = false;
+function syncA11y() {
+  a11yQueued = false;
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.contains("on") ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  document.querySelectorAll(".seg button, .chips button, .reader-bar [data-act=furi], .reader-bar [data-act=vert], .reader-bar [data-act=tts]").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
+}
+new MutationObserver(() => { if (!a11yQueued) { a11yQueued = true; queueMicrotask(syncA11y); } })
+  .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+syncA11y();
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("#sheet").hidden) $("#sheet").hidden = true; } });
 // service worker: check for a new version whenever the app comes back to the screen, and reload once it takes over
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const hadSW = !!navigator.serviceWorker.controller;
